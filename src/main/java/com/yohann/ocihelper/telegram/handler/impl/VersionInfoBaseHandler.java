@@ -1,0 +1,60 @@
+package com.yohann.ocihelper.telegram.handler.impl;
+
+import cn.hutool.extra.spring.SpringUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.yohann.ocihelper.bean.entity.OciKv;
+import com.yohann.ocihelper.enums.SysCfgEnum;
+import com.yohann.ocihelper.enums.SysCfgTypeEnum;
+import com.yohann.ocihelper.service.IOciKvService;
+import com.yohann.ocihelper.telegram.builder.KeyboardBuilder;
+import com.yohann.ocihelper.telegram.handler.AbstractCallbackHandler;
+import com.yohann.ocihelper.utils.CommonUtils;
+import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
+import org.telegram.telegrambots.meta.generics.TelegramClient;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static java.lang.Math.toIntExact;
+
+/**
+ * 版本信息基础处理器（共享逻辑）
+ * 
+ * @author Wuge
+ */
+public abstract class VersionInfoBaseHandler extends AbstractCallbackHandler {
+    
+    protected BotApiMethod<? extends Serializable> getVersionInfo(long chatId, long messageId, TelegramClient telegramClient) {
+        String content = "【版本信息】\n\n当前版本：%s\n最新版本：%s\n";
+        IOciKvService kvService = SpringUtil.getBean(IOciKvService.class);
+        String latest = CommonUtils.getLatestVersion();
+        String now = kvService.getObj(new LambdaQueryWrapper<OciKv>()
+                .eq(OciKv::getCode, SysCfgEnum.SYS_INFO_VERSION.getCode())
+                .eq(OciKv::getType, SysCfgTypeEnum.SYS_INFO.getCode())
+                .select(OciKv::getValue), String::valueOf);
+        String common = String.format(content, now, latest);
+        
+        List<InlineKeyboardRow> keyboard = new ArrayList<>();
+        
+        if (!now.equals(latest)) {
+            common += "⚠️ 一键更新已停用。\n请重新构建本仓库源码后替换 JAR 完成升级。";
+            
+            keyboard.add(KeyboardBuilder.buildCancelRow());
+        } else {
+            common += "当前已是最新版本，无需更新~";
+            keyboard = KeyboardBuilder.buildMainMenu();
+        }
+        
+        return EditMessageText.builder()
+                .chatId(chatId)
+                .messageId(toIntExact(messageId))
+                .text(common)
+                .replyMarkup(new InlineKeyboardMarkup(keyboard))
+                .build();
+    }
+}

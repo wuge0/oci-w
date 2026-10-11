@@ -1,0 +1,30 @@
+# 构建上下文排除项 —— 减小上下文体积、加快镜像构建
+target/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# 文档与截图不参与运行
+img/
+doc/
+*.md
+!README.md
+LICENSE
+
+# 本地存档与本地产物
+oci-w-archive/
+*.tar.gz
+*.patch
+*.log
+
+# 数据库与密钥绝不进镜像（运行时以卷挂载）
+*.db
+keys/
+
+# 系统产物
+.DS_Store
+Thumbs.db

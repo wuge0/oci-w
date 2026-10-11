@@ -1,0 +1,20 @@
+package com.yohann.ocihelper.bean.response.oci.traffic;
+
+import lombok.Data;
+
+import java.util.List;
+
+/**
+ * @projectName: oci-w
+ * @package: com.yohann.ocihelper.bean.response.oci.traffic
+ * @className: GetTrafficDataRsp
+ * @author: Wuge
+ * @date: 2025/3/7 21:26
+ */
+@Data
+public class GetTrafficDataRsp {
+
+    List<String> time;
+    List<String> inbound;
+    List<String> outbound;
+}

@@ -1,0 +1,44 @@
+# ============================================================================
+#  可选：推送到 Docker Hub 的 CI 工作流
+# ----------------------------------------------------------------------------
+#  用来把本地构建的镜像推送到 Docker Hub（可选功能）。
+#
+#  纯本地使用**不需要**这个工作流，可以忽略或直接删除本文件。
+#  仅当你把本仓库推送到自己的 GitHub、并希望自动构建推送镜像时，
+#  才需要在仓库 Settings → Secrets 中配置：
+#      DOCKER_USERNAME  —— 你的 Docker Hub 用户名
+#      DOCKER_PASSWORD  —— 你的 Docker Hub 访问令牌（Access Token，非登录密码）
+# ============================================================================
+name: Docker Image CI (Docker Hub)
+
+# 仅手动触发：本工作流需要仓库 Secrets 中配置 DOCKER_USERNAME / DOCKER_PASSWORD，
+# 未配置时若随 push 自动运行会必然失败。需要时在 Actions 页面手动运行即可。
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          file: ./Dockerfile
+          tags: ${{ secrets.DOCKER_USERNAME }}/oci-w:latest

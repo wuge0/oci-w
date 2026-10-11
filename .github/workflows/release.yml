@@ -1,0 +1,92 @@
+# ============================================================================
+#  打标签即自动构建并发布 Release
+# ----------------------------------------------------------------------------
+#  触发方式：
+#      git tag v1.0.0 && git push origin v1.0.0
+#  也可在 Actions 页面手动触发（workflow_dispatch），此时版本号取自 pom.xml。
+#
+#  产出：
+#      - 可执行 JAR（oci-w-<version>.jar）作为 Release 附件
+#      - 由提交历史自动生成的 Release Notes
+# ============================================================================
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build
+        run: mvn -B -DskipTests clean package
+
+      - name: Show artifact
+        run: ls -lh target/*.jar
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oci-w-jar
+          path: target/oci-w-*.jar
+          retention-days: 30
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -e
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            TAG="v$(grep -oP '(?<=<version>)[^<]+' pom.xml | head -1)"
+          else
+            TAG="$REF"
+          fi
+          echo "目标版本: $TAG"
+
+          NOTES=$(printf '%s\n' \
+            '> 行到水穷处，坐看云起时。' \
+            '' \
+            '从源码到运行镜像的完整链路均在本地闭环完成，不依赖任何外部服务。' \
+            '' \
+            '**产物**：`oci-w-*.jar` —— 可执行 JAR，运行时需 JDK 21+' \
+            '' \
+            '**快速开始**' \
+            '' \
+            '```bash' \
+            '# 方式一：Docker（镜像本地构建）' \
+            'docker compose up -d --build' \
+            '' \
+            '# 方式二：纯 JAR + systemd' \
+            'sudo bash deploy/install-local.sh jar' \
+            '```' \
+            '' \
+            '> 云无心以出岫，鸟倦飞而知还。')
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Release 已存在，只追加/覆盖附件
+            gh release upload "$TAG" target/oci-w-*.jar --clobber
+          else
+            gh release create "$TAG" target/oci-w-*.jar \
+              --title "oci-w $TAG" \
+              --notes "$NOTES" \
+              --generate-notes
+          fi

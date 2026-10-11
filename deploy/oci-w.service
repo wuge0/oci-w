@@ -1,0 +1,40 @@
+[Unit]
+Description=oci-w —— Oracle Cloud (OCI) 管理面板
+Documentation=file:/opt/oci-w/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/oci-w
+
+# 启动命令与 Dockerfile 中的 CMD 保持一致（--add-opens 是 OCI SDK 反射所需）
+# 用 /usr/bin/env 定位 java，可兼容 SDKMAN / 手动解压等非标准安装路径；
+# 若你的 java 固定在 /usr/bin/java，可直接写绝对路径以更严格。
+ExecStart=/usr/bin/env java \
+    --add-opens java.base/java.net=ALL-UNNAMED \
+    --add-opens java.base/sun.net.www.protocol.https=ALL-UNNAMED \
+    -jar /opt/oci-w/oci-w.jar
+
+# 程序以 SIGTERM 结束属正常退出
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+
+StandardOutput=append:/var/log/oci-w.log
+StandardError=append:/var/log/oci-w.log
+
+# ---------------------------------------------------------------------------
+# 以下为可选加固项。oci-w 需要在 /opt/oci-w 下读写 keys/、oci-w.db，
+# 因此用 ReadWritePaths 显式放行；若你的部署路径不同，请同步修改。
+# 若出现启动异常（例如程序要写额外路径），可先整体注释掉这一段排查。
+# ---------------------------------------------------------------------------
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/oci-w /var/log
+
+[Install]
+WantedBy=multi-user.target

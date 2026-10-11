@@ -1,0 +1,51 @@
+server:
+  port: 8818
+
+# --------------------------------------- 用户自定义修改项 ------------------------------------
+# web登录管理员账号密码
+# 请务必修改默认口令，并确保本文件权限为 600（chmod 600）。
+# 口令以明文保存在此处，泄露即等于交出全部云账号密钥。
+web:
+  account: admin
+  password: CHANGE_ME_BEFORE_START
+# --------------------------------------- 用户自定义修改项 ------------------------------------
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:oci-w.db
+  sql:
+    init:
+      mode: always
+  ai:
+    openai:
+      api-key: sk-xxx
+      base-url: https://api.siliconflow.cn
+      chat:
+        options:
+          model: deepseek-ai/DeepSeek-R1-0528-Qwen3-8B
+
+mybatis-plus:
+  mapper-locations: classpath*:com/yohann/ocihelper/mapper/xml/*.xml
+
+logging:
+  pattern:
+    # console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %msg%n"
+  level:
+    com.oracle.bmc: error
+    c.o.b.h.c.j: error
+    org.telegram.telegrambots.longpolling.BotSession: off
+
+# 密钥文件存放目录（如果是docker部署则不用修改）
+oci-cfg:
+  # 开机成功后的通知广播地址。留空即完全不上报（默认为空）。
+  # 启用后会在每次开机成功时向该服务端上报 region / 架构 / 账户类型。
+  # 如需使用此功能，请填写你自己的服务端地址。
+  boot-broadcast-url: ""
+  boot-broadcast-channel: ""
+  # Docker 部署用 /app/oci-w/keys；本机直跑改成你的实际路径。
+  key-dir-path: /app/oci-w/keys
