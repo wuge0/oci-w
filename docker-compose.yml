@@ -9,7 +9,7 @@
 #    docker compose down               # 停止
 #
 #  首次使用前请先准备好：
-#    1) application.yml  —— 务必修改 web.account / web.password
+#    1) src/main/resources/application.yml —— 务必修改 web.account / web.password
 #    2) oci-w.db         —— 初始数据库（仓库内已附带）
 #    3) keys/            —— OCI API 私钥目录（空目录即可，之后放 pem）
 # ============================================================================
@@ -30,7 +30,9 @@ services:
       # 建议改为 "127.0.0.1:8818:8818" 只监听本机，避免绕过 HTTPS。
       - "8818:8818"
     volumes:
-      - ./application.yml:/app/oci-w/application.yml
+      # 注意：application.yml 实际位于 src/main/resources/ 下，
+      # 必须挂载具体文件路径，否则 Docker 会误创建为目录导致配置读取失败。
+      - ./src/main/resources/application.yml:/app/oci-w/application.yml
       - ./oci-w.db:/app/oci-w/oci-w.db
       - ./keys:/app/oci-w/keys
       - ./logs:/var/log
